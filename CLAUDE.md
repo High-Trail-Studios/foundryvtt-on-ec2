@@ -36,6 +36,11 @@ of the time.
 - **No ALB** (~$16/mo to front one instance), **no ECS**.
 - **Default t4g.medium**, document c7g.large. Both Graviton, so images must be
   built for arm64.
+- **The instance builds its own image** (R13), natively on arm64, and only when
+  the tag is absent from ECR — so the game-night path is always a plain pull.
+  This is why Docker is not a user prerequisite, and why the instance role has
+  ECR push. Do not move the build back to the user's machine without revisiting
+  R12 and R14.
 - **Foundry's native S3 asset storage is not used by default** — Foundry
   requires the bucket to be public. Opt-in only, with the caveat stated.
 
@@ -59,4 +64,5 @@ front rather than discovered at first boot.
 
 ## Commands
 
-TBD — no Terraform yet. Image build is `cd docker && ./build.sh <version>`.
+TBD — no Terraform yet. `docker/build.sh <version>` builds locally for
+development; it is not the deployment path (R13).

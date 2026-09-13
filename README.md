@@ -64,8 +64,8 @@ point of stopping the instance.
 
 ## Prerequisites
 
-Full list with rationale: **[REQUIREMENTS.md](REQUIREMENTS.md)**. The four that
-stop people:
+Full list with rationale: **[REQUIREMENTS.md](REQUIREMENTS.md)**. The three
+that stop people:
 
 - **A Route 53 hosted zone, in this AWS account, with nameservers already
   delegated to it.** Not just owning a domain. TLS needs a real hostname, and
@@ -76,8 +76,8 @@ stop people:
   `terraform apply`.
 - **A Foundry licence and the Linux/NodeJS download** — not the desktop app,
   not Foundry's own Docker build.
-- **AWS CLI, Terraform, and Docker installed locally**, with `buildx` for the
-  arm64 build.
+- **AWS CLI and Terraform installed locally.** Docker is *not* required — the
+  instance builds its own image (R13).
 
 ---
 
@@ -111,18 +111,14 @@ Outputs the ECR repository URL and the instance ID — both needed below.
 
 TBD. Terraform manages the record; confirm it resolves before continuing.
 
-### 4. Build and push the image
-
-Download the Foundry Linux/NodeJS zip into `docker/`, then:
+### 4. Upload the Foundry download to S3
 
 ```bash
-cd docker
-./build.sh 14.364
-# push to ECR — TBD
+aws s3 cp FoundryVTT-Linux-14.364.zip s3://<your-bucket>/dist/
 ```
 
-Builds for **arm64**, since the instance is Graviton. On an Intel machine this
-runs under emulation and is slow.
+That is the whole step. The instance builds the image itself on first start —
+natively on arm64, no Docker needed on your machine.
 
 ### 5. Migrating an existing campaign? Upload it now
 
@@ -134,8 +130,13 @@ Skip if you are starting fresh.
 
 ### 6. Start the instance
 
-TBD. First boot pulls the image, updates DNS, seeds data if present, and
-obtains a certificate. Slower than subsequent boots.
+TBD. Boot updates DNS, then either pulls the image from ECR or — if this
+Foundry version has not been built yet — builds it from the zip in S3 and
+pushes it to ECR. It then seeds data if present and obtains a certificate.
+
+**First start takes several minutes longer** because of that build. It happens
+once per Foundry version, not once per session. Every later start is a plain
+pull.
 
 ### 7. Foundry first-run
 

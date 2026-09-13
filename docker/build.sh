@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 #
-# Build the Foundry VTT image.
+# Build the Foundry VTT image LOCALLY, for development and testing.
+#
+# This is not the deployment path. In production the instance builds its own
+# image natively on arm64 and pushes it to ECR (see REQUIREMENTS.md R13), which
+# is why Docker is not a prerequisite for adopters.
 #
 # You supply the Foundry distribution. Sign in to foundryvtt.com with your own
 # licensed account, download the "Linux/NodeJS" package, and drop the zip in

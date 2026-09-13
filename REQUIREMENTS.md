@@ -37,9 +37,8 @@ Email, the main website, and every other record stay untouched. Moving a whole
 domain's DNS to Route 53 risks breaking MX records and is not worth it here.
 
 > **Honest tension:** NS delegation is not a non-technical task, and this
-> project claims a non-technical audience. Either the docs walk through
-> delegation carefully, or we accept that the audience is "lightly technical."
-> Unresolved — see R14.
+> project claims a non-technical audience. Since R13 was resolved, this is the
+> *only* remaining obstacle to that claim — see R14.
 
 ### R2 — Ports 80 and 443 reachable from the internet — **User**
 
@@ -70,11 +69,16 @@ forgotten running instance, not overspending.
 
 The instance needs exactly:
 
-- ECR: pull the image
+- ECR: pull **and push**, scoped to the one repository (see R13)
 - S3: read/write the backup bucket only
 - Route 53: `ChangeResourceRecordSets` on the one hosted zone only
 
 Per org policy the actual policy is part of the product and goes in the README.
+
+> **Accepted tradeoff:** push access means a compromised instance could poison
+> its own image. Low concern for this threat model, but it is a real widening
+> and the reason is R13. If it ever stops being acceptable, moving the build to
+> CodeBuild returns the instance to pull-only.
 
 ### R7 — No standing hourly resources — **Design**
 
@@ -108,19 +112,41 @@ Docker distribution. Downloading the wrong one is a common failure.
 
 ## Local tooling
 
-### R12 — AWS CLI, Terraform, Docker — **User**
+### R12 — AWS CLI and Terraform — **User**
 
-Docker needs `buildx` for the arm64 cross-build. Local disk: ~250MB for the
-zip, 1–2GB for the built image.
+Docker is **not** required locally; see R13. Local disk: ~250MB for the Foundry
+zip, which is uploaded to S3 rather than built against.
 
-### R13 — arm64 build capability — **User/Design** — **Open**
+### R13 — Image is built on the instance — **Design** — *decided*
 
-Building a Graviton image on an Intel machine works under emulation but is
-slow, and it is the step most likely to strand a non-technical user.
+The instance builds its own image, natively on arm64, **only when the tag is
+absent from ECR**:
 
-Open alternative: have the instance build the image natively on first boot from
-a zip in S3, which removes Docker from the prerequisite list entirely. Costs a
-slower first boot and more boot-script complexity. **Not yet decided.**
+```
+if ECR has foundryvtt:$VERSION   -> pull
+else                             -> fetch zip from S3, build, push to ECR
+```
+
+So the game-night path is always a plain pull. The build runs once per Foundry
+version, during setup, when nobody is waiting to play — which is what makes a
+build step in user-data acceptable at all.
+
+Chosen because it removes Docker, `buildx` and QEMU emulation from the user's
+prerequisites entirely (R12). Rejected alternatives: building on the user's
+laptop (kept Docker as a hard prerequisite and meant a 5–10 minute emulated
+build for Intel and Windows users); CodeBuild (cleaner separation and keeps the
+instance pull-only, but adds a service and a worse debugging story).
+
+Consequences:
+
+- Instance role gains ECR push — see R6.
+- Root volume needs ~4GB of working headroom for the build.
+- The Dockerfile, compose file and Caddyfile must reach the instance. Intended
+  approach is Terraform-managed `aws_s3_object`s pulled at boot, so they are
+  versioned with the infrastructure and changeable without an image rebuild.
+  **Implementation detail, not yet settled.**
+- `docker/build.sh` remains for local development and testing, but is no longer
+  the primary path.
 
 ---
 
@@ -128,9 +154,14 @@ slower first boot and more boot-script complexity. **Not yet decided.**
 
 ### R14 — Who is the actual audience?
 
-R1 and R13 both push toward "lightly technical" rather than "non-technical."
-Worth settling explicitly, because it decides how much the docs carry and how
-much we automate away.
+R13 is resolved in the direction that removes technical burden, so **R1 is now
+the only hard obstacle left**: NS delegation is not something a non-technical
+user does unaided.
+
+That narrows the question usefully. Either the docs walk through delegation
+step by step and we claim non-technical honestly, or we accept "lightly
+technical" and stop apologising for it. Still worth deciding explicitly,
+because it governs how much the docs carry.
 
 ### R15 — Teardown versus `prevent_destroy`
 
