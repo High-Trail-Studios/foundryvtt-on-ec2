@@ -1,21 +1,51 @@
-# Foundry VTT runtime.
+# Foundry VTT + Caddy TLS termination.
 #
-# Defaults run locally with ./data. On EC2 the boot script sets FOUNDRY_DATA
-# to the mount point of the persistent EBS volume.
+# Copy .env.example to .env and fill it in, then:
 #
-# No `version:` key — Compose V2 ignores it and warns.
+#   docker compose up -d
+#
+# Foundry is NOT published to the host. It is reachable only through Caddy on
+# the internal network, so the only things facing the internet are 80 and 443.
 
 services:
+  caddy:
+    # Floats within Caddy 2.x. Pin to an exact version or digest once you have
+    # tested one — a major-version tag is weaker than this repo's usual bar,
+    # and the tradeoff is deliberate: it keeps ACME and TLS fixes flowing.
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"     # required for the ACME HTTP challenge and the HTTP->HTTPS redirect
+      - "443:443"
+    volumes:
+      - "./Caddyfile:/etc/caddy/Caddyfile:ro"
+      # Certificates and ACME account keys live here. This MUST persist across
+      # container restarts and instance rebuilds. If it does not, Caddy
+      # re-requests a certificate every boot and will hit Let's Encrypt's
+      # duplicate-certificate rate limit (5/week), locking you out for days.
+      - "${CADDY_DATA:-./caddy/data}:/data"
+      - "${CADDY_STATE:-./caddy/config}:/config"
+    environment:
+      - FOUNDRY_DOMAIN
+      - ACME_EMAIL
+    depends_on:
+      - foundry
+
   foundry:
     image: ${FOUNDRY_IMAGE:-foundryvtt:14.364}
     restart: unless-stopped
-    ports:
-      # Host:container. Caddy terminates TLS in front of this, so binding to
-      # localhost keeps Foundry off the public interface directly.
-      - "${FOUNDRY_BIND:-127.0.0.1}:${FOUNDRY_PORT:-30000}:30000"
     volumes:
-      # Must be owned by uid 10001 on the host — see the Dockerfile.
+      # Worlds (LevelDB), assets, config. Must be owned by uid 10001 on the
+      # host — see the Dockerfile.
       - "${FOUNDRY_DATA:-./data}:/data"
     environment:
       - TZ=${TZ:-UTC}
+    # Foundry must be told it sits behind a TLS-terminating proxy, or it will
+    # generate invite links and redirects on http:// and the wrong port.
+    # UNVERIFIED: if these are not accepted as CLI flags, set proxySSL and
+    # proxyPort in /data/Config/options.json or via Foundry's own setup UI.
+    command: ["--dataPath=/data", "--proxySSL=true", "--proxyPort=443"]
     # Healthcheck is defined in the image; Compose inherits it.
+    # To reach Foundry directly for local testing without a domain, uncomment:
+    #ports:
+    #  - "127.0.0.1:30000:30000"

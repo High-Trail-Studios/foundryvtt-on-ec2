@@ -7,6 +7,13 @@ FoundryVTT-*.zip
 data/
 docker/data/
 
+# Caddy certificates and ACME account keys — never commit.
+docker/caddy/
+
+# Local environment values (domain, ACME email) — never commit.
+.env
+!.env.example
+
 # Terraform
 .terraform/
 *.tfstate

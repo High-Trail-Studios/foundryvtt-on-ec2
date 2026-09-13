@@ -1,0 +1,18 @@
+# TLS termination for Foundry VTT.
+#
+# Caddy obtains and renews a Let's Encrypt certificate automatically. This
+# requires FOUNDRY_DOMAIN to resolve to this instance's public address and
+# ports 80 and 443 to be reachable from the internet.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$FOUNDRY_DOMAIN} {
+	encode zstd gzip
+
+	# Foundry is socket.io-heavy. Caddy v2 upgrades WebSocket connections
+	# through reverse_proxy with no extra configuration, and applies no
+	# request body limit — which matters, because users upload large maps.
+	reverse_proxy foundry:30000
+}
