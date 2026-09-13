@@ -16,8 +16,11 @@ docker/caddy/
 
 # Terraform
 .terraform/
+.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 *.tfvars
 !example.tfvars
 crash.log
+override.tf
+override.tf.json

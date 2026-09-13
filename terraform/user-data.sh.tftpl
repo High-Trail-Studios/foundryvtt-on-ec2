@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#
+# Minimal bootstrap. The real logic lives in boot.sh in S3 so it can be
+# corrected without replacing the instance, and so shell code never has to
+# survive Terraform's template interpolation.
+
+set -euo pipefail
+exec > >(tee /var/log/foundry-boot.log | logger -t foundry-boot) 2>&1
+
+export DEBIAN_FRONTEND=noninteractive
+
+if ! command -v aws >/dev/null 2>&1; then
+  apt-get update -qq
+  apt-get install -y -qq --no-install-recommends awscli curl unzip dnsutils
+fi
+
+aws s3 cp "s3://${bucket}/config/foundry.env" /etc/foundry.env --region "${region}"
+aws s3 cp "s3://${bucket}/${boot_script_key}" /usr/local/bin/foundry-boot.sh --region "${region}"
+chmod +x /usr/local/bin/foundry-boot.sh
+
+exec /usr/local/bin/foundry-boot.sh
