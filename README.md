@@ -64,16 +64,20 @@ point of stopping the instance.
 
 ## Prerequisites
 
-Be honest with yourself about this list before starting — the domain is the
-hardest part and there is no way around it.
+Full list with rationale: **[REQUIREMENTS.md](REQUIREMENTS.md)**. The four that
+stop people:
 
-- An AWS account you can create resources in.
-- **A domain name with DNS you control**, hosted in Route 53. Let's Encrypt
-  will not issue a certificate for a bare IP address, so TLS requires a real
-  hostname.
-- A Foundry VTT licence, and the **Linux/NodeJS** package downloaded from your
-  account at foundryvtt.com.
-- Installed locally: AWS CLI, Terraform, Docker.
+- **A Route 53 hosted zone, in this AWS account, with nameservers already
+  delegated to it.** Not just owning a domain. TLS needs a real hostname, and
+  the boot script rewrites an A record on every start. Delegating a single
+  subdomain (`vtt.example.com`) is safer than moving a whole domain's DNS —
+  see R1.
+- **An AWS account you can create IAM roles in.** A restricted user fails at
+  `terraform apply`.
+- **A Foundry licence and the Linux/NodeJS download** — not the desktop app,
+  not Foundry's own Docker build.
+- **AWS CLI, Terraform, and Docker installed locally**, with `buildx` for the
+  arm64 build.
 
 ---
 
