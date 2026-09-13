@@ -1,0 +1,16 @@
+# Foundry VTT distributions are licensed commercial software.
+# Never commit them. You supply your own copy at build time.
+FoundryVTT-*.zip
+*.zip
+
+# Local Foundry data (worlds, assets, config) — never commit.
+data/
+docker/data/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!example.tfvars
+crash.log

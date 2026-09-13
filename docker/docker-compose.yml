@@ -1,0 +1,21 @@
+# Foundry VTT runtime.
+#
+# Defaults run locally with ./data. On EC2 the boot script sets FOUNDRY_DATA
+# to the mount point of the persistent EBS volume.
+#
+# No `version:` key — Compose V2 ignores it and warns.
+
+services:
+  foundry:
+    image: ${FOUNDRY_IMAGE:-foundryvtt:14.364}
+    restart: unless-stopped
+    ports:
+      # Host:container. Caddy terminates TLS in front of this, so binding to
+      # localhost keeps Foundry off the public interface directly.
+      - "${FOUNDRY_BIND:-127.0.0.1}:${FOUNDRY_PORT:-30000}:30000"
+    volumes:
+      # Must be owned by uid 10001 on the host — see the Dockerfile.
+      - "${FOUNDRY_DATA:-./data}:/data"
+    environment:
+      - TZ=${TZ:-UTC}
+    # Healthcheck is defined in the image; Compose inherits it.
