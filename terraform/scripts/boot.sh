@@ -111,7 +111,7 @@ CHANGE_ID=$(aws route53 change-resource-record-sets \
     "ResourceRecordSet": {
       "Name": "${FOUNDRY_DOMAIN}",
       "Type": "A",
-      "TTL": 60,
+      "TTL": ${DNS_TTL},
       "ResourceRecords": [{"Value": "${PUBLIC_IP}"}]
     }
   }]
@@ -132,6 +132,35 @@ for i in $(seq 1 30); do
   sleep 10
 done
 log "DNS confirmed"
+
+# Arm the shutdown half now, not at the end: if a later step fails, stopping
+# the instance must still park the record rather than leave it pointing at a
+# released IP. See dns-park.sh.
+aws s3 cp "s3://${S3_BUCKET}/config/dns-park.sh" /usr/local/bin/foundry-dns-park.sh --quiet
+chmod +x /usr/local/bin/foundry-dns-park.sh
+
+cat > /etc/systemd/system/foundry-dns.service <<'UNIT'
+[Unit]
+Description=Park the Foundry hostname on shutdown
+# Stopped before the network goes down, so the Route 53 call can still reach AWS.
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/true
+ExecStop=/usr/local/bin/foundry-dns-park.sh
+TimeoutStopSec=60
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable --now foundry-dns.service
 
 # ---------------------------------------------------------------------------
 # 4. Runtime config from S3.
