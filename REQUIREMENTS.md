@@ -101,8 +101,11 @@ simultaneously is not allowed by Foundry's terms.
 
 ### R10 — The correct download — **User**
 
-The **Linux/NodeJS** package, not the Windows/macOS app and not Foundry's own
-Docker distribution. Downloading the wrong one is a common failure.
+The **Node.js** package (`FoundryVTT-Node-<version>.zip`) — the headless
+server build. Not the **Linux** package: that is the Electron desktop app,
+~100MB larger with a bundled Chromium the server never uses. Not the
+Windows/macOS apps, and not Foundry's own Docker distribution. Downloading the
+wrong one is a common failure.
 
 ### R11 — v14 only — **Design**
 

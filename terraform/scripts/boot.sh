@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Foundry VTT boot script. Fetched from S3 by user-data and run on every start.
+# Foundry VTT boot script. Fetched from S3 and run on every start by
+# foundry-boot.service, which user-data installs (see user-data.sh.tftpl).
 #
 # Must be idempotent: a fresh instance and a restarted instance both end in the
 # same serving state with no manual steps.
@@ -160,12 +161,12 @@ if docker pull "$IMAGE" 2>/dev/null; then
 else
   log "$IMAGE not in ECR — building it (first run for this version)"
 
-  ZIP="FoundryVTT-Linux-${FOUNDRY_VERSION}.zip"
+  ZIP="FoundryVTT-Node-${FOUNDRY_VERSION}.zip"
   BUILD=$(mktemp -d)
   trap 'rm -rf "$BUILD"' EXIT
 
   aws s3 cp "s3://${S3_BUCKET}/dist/${ZIP}" "$BUILD/$ZIP" --quiet \
-    || die "s3://${S3_BUCKET}/dist/${ZIP} not found. Upload the Foundry Linux/NodeJS package for ${FOUNDRY_VERSION} before starting."
+    || die "s3://${S3_BUCKET}/dist/${ZIP} not found. Upload the Foundry Node.js package for ${FOUNDRY_VERSION} before starting."
 
   cp "$CONFIG/Dockerfile" "$BUILD/Dockerfile"
 

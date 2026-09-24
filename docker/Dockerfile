@@ -4,12 +4,13 @@
 #
 # This image does NOT ship Foundry VTT. You supply your own licensed copy at
 # build time: sign in to foundryvtt.com with your own account, download the
-# "Linux/NodeJS" package, and place the zip beside this Dockerfile.
+# "Node.js" package (not "Linux", which is the Electron desktop app), and place
+# the zip beside this Dockerfile.
 #
 # The image you build DOES contain licensed software. Keep it in a private
 # registry (ECR). Never push it anywhere public.
 #
-#   ./build.sh 14.364
+#   ./build.sh 14.368
 
 ARG UBUNTU_VERSION=26.04
 
@@ -26,7 +27,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends unzip \
  && rm -rf /var/lib/apt/lists/*
 
-COPY FoundryVTT-Linux-${FOUNDRY_VERSION}.zip /tmp/foundry.zip
+COPY FoundryVTT-Node-${FOUNDRY_VERSION}.zip /tmp/foundry.zip
 RUN unzip -q /tmp/foundry.zip -d /opt/foundryvtt \
  && rm /tmp/foundry.zip
 
@@ -72,5 +73,5 @@ EXPOSE 30000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:30000/',r=>process.exit(r.statusCode<400?0:1)).on('error',()=>process.exit(1))"
 
-ENTRYPOINT ["node", "resources/app/main.js"]
+ENTRYPOINT ["node", "main.js"]
 CMD ["--dataPath=/data"]
