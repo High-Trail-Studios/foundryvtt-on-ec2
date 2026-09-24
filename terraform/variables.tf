@@ -90,9 +90,9 @@ variable "data_volume_size" {
 }
 
 variable "foundry_version" {
-  description = "Foundry version to run, e.g. 14.364. The matching FoundryVTT-Linux-<version>.zip must be uploaded to s3://<bucket>/dist/ before first start."
+  description = "Foundry version to run, e.g. 14.368. The matching FoundryVTT-Node-<version>.zip must be uploaded to s3://<bucket>/dist/ before first start."
   type        = string
-  default     = "14.364"
+  default     = "14.368"
 
   validation {
     condition     = can(regex("^14\\.", var.foundry_version))
@@ -141,15 +141,22 @@ variable "ecr_force_delete" {
 # ---------------------------------------------------------------------------
 
 variable "aws_region" {
-  description = "Region to deploy into. Must offer Graviton instance types (REQUIREMENTS.md R4)."
+  description = "Region to deploy into. Overrides AWS_REGION and your CLI profile's region. Must offer Graviton instance types (REQUIREMENTS.md R4). Changing it after creation rebuilds everything in the new region."
   type        = string
   default     = "us-east-1"
 }
 
 variable "name_prefix" {
-  description = "Prefix for resource names and tags."
+  description = "Prefix for resource names and the Project tag. Change it to run more than one copy in an account, or to fit your naming convention. Set it before the first apply: changing it later replaces the S3 bucket and ECR repository."
   type        = string
   default     = "foundry"
+
+  # The strictest consumers set the rules: S3 and ECR want lowercase, and IAM
+  # caps name_prefix at 38 characters, which "<prefix>-sched-" must fit.
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{0,22}[a-z0-9]$", var.name_prefix))
+    error_message = "name_prefix must be 2-24 characters: lowercase letters, digits and hyphens, starting with a letter and not ending in a hyphen."
+  }
 }
 
 variable "tags" {

@@ -16,11 +16,12 @@ docker/caddy/
 
 # Terraform
 .terraform/
-.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 *.tfvars
-!example.tfvars
 crash.log
+# A stray file literally named "]" — an easy editor slip (`:w ]`) that saves a
+# copy of real tfvars under a name *.tfvars does not catch.
+\]
 override.tf
 override.tf.json

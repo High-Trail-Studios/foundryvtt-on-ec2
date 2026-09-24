@@ -4,8 +4,11 @@ terraform {
   required_providers {
     aws = {
       source = "hashicorp/aws"
-      # Pinned to a major line. Bump deliberately after testing, not by drift.
-      version = "~> 5.0"
+      # Pinned to the tested release; patch updates only. Bump deliberately
+      # after testing, not by drift. The pin lives here rather than only in
+      # .terraform.lock.hcl because the lock file is registry-specific: its
+      # OpenTofu entries mean nothing to HashiCorp Terraform.
+      version = "~> 5.100.0"
     }
   }
 }

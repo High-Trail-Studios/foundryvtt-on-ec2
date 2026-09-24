@@ -3,6 +3,11 @@ output "instance_id" {
   value       = aws_instance.foundry.id
 }
 
+output "region" {
+  description = "Region the stack is deployed in."
+  value       = var.aws_region
+}
+
 output "bucket" {
   description = "S3 bucket. Upload the Foundry zip to the dist/ prefix here."
   value       = aws_s3_bucket.data.id
@@ -10,7 +15,7 @@ output "bucket" {
 
 output "foundry_zip_destination" {
   description = "Exact destination for the Foundry download before first start."
-  value       = "s3://${aws_s3_bucket.data.id}/dist/FoundryVTT-Linux-${var.foundry_version}.zip"
+  value       = "s3://${aws_s3_bucket.data.id}/dist/FoundryVTT-Node-${var.foundry_version}.zip"
 }
 
 output "ecr_repository_url" {

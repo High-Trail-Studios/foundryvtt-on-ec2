@@ -1,4 +1,6 @@
 # Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+#
+#   cp terraform.tfvars.example terraform.tfvars
 
 # --- required ---------------------------------------------------------------
 
@@ -12,8 +14,15 @@ alert_email = "you@example.com"
 
 # --- common overrides -------------------------------------------------------
 
+# This wins over AWS_REGION and your CLI profile's region. Pick one and stay:
+# the data volume is pinned to an availability zone in it.
 aws_region      = "us-east-1"
-foundry_version = "14.364"
+foundry_version = "14.368"
+
+# Prefixes every resource name and the Project tag. Change it to run a second
+# copy in the same account. Set it BEFORE the first apply: changing it later
+# replaces the S3 bucket and ECR repository.
+# name_prefix = "foundry"
 
 # t4g.medium is the default. c7g.large costs ~2x for non-burstable CPU —
 # worth it only for a large table with heavy modules.
