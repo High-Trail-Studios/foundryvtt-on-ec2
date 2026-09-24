@@ -32,7 +32,7 @@ services:
       - foundry
 
   foundry:
-    image: ${FOUNDRY_IMAGE:-foundryvtt:14.364}
+    image: ${FOUNDRY_IMAGE:-foundryvtt:14.368}
     restart: unless-stopped
     volumes:
       # Worlds (LevelDB), assets, config. Must be owned by uid 10001 on the

@@ -85,5 +85,7 @@ locals {
     bucket          = aws_s3_bucket.data.id
     region          = var.aws_region
     boot_script_key = aws_s3_object.boot.key
+    # Official AWS CLI v2 build. Bump deliberately; see user-data.sh.tftpl.
+    awscli_version = "2.36.48"
   })
 }

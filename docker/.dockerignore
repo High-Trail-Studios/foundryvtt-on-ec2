@@ -1,4 +1,4 @@
 # Send nothing to the build daemon except what the Dockerfile actually needs.
 # Without this the context includes every Foundry zip in the directory.
 *
-!FoundryVTT-Linux-*.zip
+!FoundryVTT-Node-*.zip

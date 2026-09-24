@@ -4,11 +4,17 @@
 # mode this tool actually has is forgetting to stop the instance, not
 # overspending — leaving it running costs roughly 60x the intended bill.
 
+# The topic lives in us-east-1 with the billing alarm: CloudWatch only allows
+# alarm actions in the alarm's own region. The budget emails directly.
 resource "aws_sns_topic" "alerts" {
+  provider = aws.billing
+
   name_prefix = "${var.name_prefix}-"
 }
 
 resource "aws_sns_topic_subscription" "alerts_email" {
+  provider = aws.billing
+
   topic_arn = aws_sns_topic.alerts.arn
   protocol  = "email"
   endpoint  = var.alert_email

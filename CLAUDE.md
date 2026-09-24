@@ -60,9 +60,15 @@ front rather than discovered at first boot.
 ## Layout
 
 - `docker/` — image build and compose stack (Foundry + Caddy)
-- Terraform — TBD, not yet written
+- `terraform/` — the deployment. `scripts/boot.sh` and `scripts/backup.sh` are
+  uploaded to S3 and run on the instance; `user-data.sh.tftpl` is a boothook
+  that installs `foundry-boot.service`, which runs `boot.sh` on every start.
+  Plain user-data would run only on first boot, and Terraform stops the
+  instance seconds after launch.
 
 ## Commands
 
-TBD — no Terraform yet. `docker/build.sh <version>` builds locally for
-development; it is not the deployment path (R13).
+From `terraform/`: `terraform fmt`, `terraform validate`, `terraform plan`.
+Boot logs without a shell: `aws ec2 get-console-output --latest`.
+`docker/build.sh <version>` builds locally for development; it is not the
+deployment path (R13).

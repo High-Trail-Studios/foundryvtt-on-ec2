@@ -1,21 +1,68 @@
-#!/usr/bin/env bash
+#cloud-boothook
+#!/bin/bash
 #
-# Minimal bootstrap. The real logic lives in boot.sh in S3 so it can be
-# corrected without replacing the instance, and so shell code never has to
-# survive Terraform's template interpolation.
+# Runs on EVERY boot (a boothook, not a plain user-data script, which cloud-init
+# runs only on the first). It only writes two local files and enables a unit:
+# no network, no installs, done in milliseconds. That matters because Terraform
+# stops the instance seconds after launch, and anything slow here would race it.
+#
+# The real work happens in foundry-boot.service, after the network is up. On the
+# launch boot the unit is enabled but not started, so nothing heavy (least of
+# all mkfs on the campaign volume) can be cut off by that stop. Every later
+# start runs it.
+#
+# The real logic lives in boot.sh in S3 so it can be corrected without
+# replacing the instance, and so shell code never has to survive Terraform's
+# template interpolation.
 
+set -eu
+
+cat > /usr/local/sbin/foundry-bootstrap <<'SCRIPT'
+#!/bin/bash
 set -euo pipefail
-exec > >(tee /var/log/foundry-boot.log | logger -t foundry-boot) 2>&1
 
-export DEBIAN_FRONTEND=noninteractive
-
+# Ubuntu 24.04 dropped the awscli package. Install the official v2 build,
+# pinned so a new CLI release cannot change boot behaviour underneath us.
 if ! command -v aws >/dev/null 2>&1; then
+  echo "[bootstrap] installing AWS CLI ${awscli_version}"
+  export DEBIAN_FRONTEND=noninteractive
   apt-get update -qq
-  apt-get install -y -qq --no-install-recommends awscli curl unzip dnsutils
+  apt-get install -y -qq --no-install-recommends curl unzip bind9-dnsutils
+  TMP=$(mktemp -d)
+  curl -fsSL -o "$TMP/awscli.zip" \
+    "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-${awscli_version}.zip"
+  unzip -q "$TMP/awscli.zip" -d "$TMP"
+  "$TMP/aws/install"
+  rm -rf "$TMP"
 fi
 
-aws s3 cp "s3://${bucket}/config/foundry.env" /etc/foundry.env --region "${region}"
-aws s3 cp "s3://${bucket}/${boot_script_key}" /usr/local/bin/foundry-boot.sh --region "${region}"
+aws s3 cp "s3://${bucket}/config/foundry.env" /etc/foundry.env --region "${region}" --quiet
+aws s3 cp "s3://${bucket}/${boot_script_key}" /usr/local/bin/foundry-boot.sh --region "${region}" --quiet
 chmod +x /usr/local/bin/foundry-boot.sh
 
 exec /usr/local/bin/foundry-boot.sh
+SCRIPT
+chmod +x /usr/local/sbin/foundry-bootstrap
+
+cat > /etc/systemd/system/foundry-boot.service <<'UNIT'
+[Unit]
+Description=Foundry VTT boot: DNS, image, start
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/foundry-bootstrap
+# First start for a new version builds the image; allow for it.
+TimeoutStartSec=45min
+# Journal for `journalctl -u foundry-boot`, console so the log is readable with
+# `aws ec2 get-console-output` without any shell access.
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl daemon-reload
+systemctl enable foundry-boot.service
