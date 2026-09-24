@@ -108,7 +108,7 @@ resource "aws_vpc_security_group_ingress_rule" "https" {
   for_each = toset(var.allowed_cidrs)
 
   security_group_id = aws_security_group.instance.id
-  description       = "HTTPS — Foundry play traffic"
+  description       = "HTTPS - Foundry play traffic"
   cidr_ipv4         = each.value
   from_port         = 443
   to_port           = 443
@@ -119,7 +119,7 @@ resource "aws_vpc_security_group_ingress_rule" "http" {
   for_each = toset(var.allowed_cidrs)
 
   security_group_id = aws_security_group.instance.id
-  description       = "HTTP — ACME challenge and HTTPS redirect only"
+  description       = "HTTP - ACME challenge and HTTPS redirect only"
   cidr_ipv4         = each.value
   from_port         = 80
   to_port           = 80
