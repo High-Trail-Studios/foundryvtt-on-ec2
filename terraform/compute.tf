@@ -54,6 +54,7 @@ resource "aws_instance" "foundry" {
   depends_on = [
     aws_s3_object.boot,
     aws_s3_object.backup,
+    aws_s3_object.dns_park,
     aws_s3_object.env,
     aws_s3_object.dockerfile,
     aws_s3_object.compose,

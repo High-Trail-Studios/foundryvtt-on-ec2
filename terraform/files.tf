@@ -22,6 +22,13 @@ resource "aws_s3_object" "backup" {
   etag   = filemd5("${path.module}/scripts/backup.sh")
 }
 
+resource "aws_s3_object" "dns_park" {
+  bucket = aws_s3_bucket.data.id
+  key    = "config/dns-park.sh"
+  source = "${path.module}/scripts/dns-park.sh"
+  etag   = filemd5("${path.module}/scripts/dns-park.sh")
+}
+
 resource "aws_s3_object" "dockerfile" {
   bucket = aws_s3_bucket.data.id
   key    = "config/Dockerfile"
@@ -56,6 +63,7 @@ resource "aws_s3_object" "env" {
     FOUNDRY_DOMAIN=${var.domain_name}
     ACME_EMAIL=${var.acme_email}
     ROUTE53_ZONE_ID=${var.route53_zone_id}
+    DNS_TTL=60
     DATA_VOLUME_ID=${aws_ebs_volume.data.id}
   ENV
 }

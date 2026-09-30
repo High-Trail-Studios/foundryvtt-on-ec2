@@ -419,8 +419,9 @@ the design working.
    the ECR images, and the data volume.
 4. **Delete the DNS record by hand.** The instance created it, not Terraform,
    so destroy leaves it behind. Remove the A record for your hostname in the
-   Route 53 console. Leaving it points your hostname at an IP address AWS will
-   give to someone else.
+   Route 53 console. After a clean stop it is parked at `192.0.2.1` and
+   harmless; if it shows any other address, it points at an IP AWS will give
+   to someone else, so delete it promptly.
 5. **Delete the hosted zone** if you created it only for this — it costs
    $0.50/month on its own.
 
@@ -453,10 +454,12 @@ Why it looks the way it does:
   arrive.
 - Route 53 only for DNS in v1.
 - Graviton (arm64) only. Instance types must be `t4g`, `c7g` or similar.
-- **Between sessions, your hostname points at a stale IP.** The address is
-  released when the instance stops and AWS may reassign it. Anyone reaching
-  your hostname then lands on whoever holds that IP now. Low risk for a game
-  server, but worth knowing.
+- **Between sessions your hostname is parked** at `192.0.2.1`, an address
+  reserved for documentation that is never assigned to anyone. The instance's
+  own IP is released on stop and AWS reassigns those; parking stops your
+  hostname from following it to a stranger. Visitors between sessions get a
+  connection timeout. Parking happens on a clean shutdown only: after a crash
+  or forced stop the record keeps the old IP until the next start.
 - Certificates are short-lived, and Caddy renews them only while running. After
   a long break the first start re-issues one and takes a little longer.
 
@@ -469,7 +472,8 @@ access needed:
 aws ec2 get-console-output --region "$(terraform output -raw region)" --instance-id "$(terraform output -raw instance_id)" --latest --output text
 ```
 
-Look for lines starting `[bootstrap]` and `[boot]`; the last one before an
+Look for lines starting `[bootstrap]` and `[boot]` (and `[dns-park]` on
+shutdown); the last one before an
 `ERROR` says what failed. The common causes:
 
 | Symptom in the log | Cause |
