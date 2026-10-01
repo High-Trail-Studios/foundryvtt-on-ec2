@@ -41,7 +41,7 @@ ARG NODE_MAJOR=24
 
 LABEL org.opencontainers.image.title="foundryvtt" \
       org.opencontainers.image.version="${FOUNDRY_VERSION}" \
-      org.opencontainers.image.vendor="High Tail Studios" \
+      org.opencontainers.image.vendor="High Trail Studios" \
       org.opencontainers.image.description="Foundry VTT runtime. Contains licensed software — do not publish."
 
 RUN apt-get update \
